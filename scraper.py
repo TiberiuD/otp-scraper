@@ -1,4 +1,6 @@
 from requests_html import HTMLSession
+from datetime import datetime
+from dateutil import tz
 import re
 
 
@@ -10,6 +12,9 @@ def get_table(url, table_id):
     rows = table.find('tr')
 
     results = []
+
+    timezone = tz.gettz('Europe/Bucharest')
+    today = datetime.combine(datetime.now(tz=timezone), datetime.min.time())
 
     for row in rows:
         columns = row.find('td')
@@ -35,9 +40,13 @@ def get_table(url, table_id):
         if split_airport:
             airport, airport_iata = split_airport[0]
 
-        scheduled_time = columns[2].text
-        estimated_time = columns[3].text
-        status = columns[4].text
+        scheduled_time = datetime.strptime(columns[2].text, '%H:%M').time()
+        scheduled_timestamp = datetime.combine(today, scheduled_time, timezone)
+
+        estimated_time = datetime.strptime(columns[3].text, '%H:%M').time()
+        estimated_timestamp = datetime.combine(today, estimated_time, timezone)
+
+        status = columns[4].text.upper()
 
         results.append({
             "flight_number": flight_number,
@@ -46,8 +55,8 @@ def get_table(url, table_id):
             "airline_logo_big": airline_logo_big,
             "airport": airport,
             "airport_iata": airport_iata,
-            "scheduled_time": scheduled_time,
-            "estimated_time": estimated_time,
+            "scheduled_timestamp": scheduled_timestamp,
+            "estimated_timestamp": estimated_timestamp,
             "status": status,
         })
 
